@@ -60,6 +60,7 @@ typedef struct {
 	char *runner_aggselectpolicy;
 } NMSettingTeamPrivate;
 
+/* Keep aligned with _prop_to_keys[] */
 enum {
 	PROP_0,
 	PROP_CONFIG,
@@ -79,6 +80,29 @@ enum {
 	PROP_RUNNER_AGGSELECTPOLICY,
 	LAST_PROP
 };
+
+/* Keep aligned with team properties enum */
+static struct {
+	const char *key;
+	const char *key2;
+	const char *key3;
+} _prop_to_keys [LAST_PROP] = { { NULL, NULL, NULL },                    /* PROP_0 */
+                                { NULL, NULL, NULL },                    /* PROP_CONFIG */
+                                { "notify_peers", "count", NULL },       /* PROP_NOTIFYPEERS_COUNT */
+                                { "notify_peers", "interval", NULL },    /* PROP_NOTIFYPEERS_INTERVAL */
+                                { "mcast_rejoin", "count", NULL },       /* PROP_MCASTREJOIN_COUNT */
+                                { "mcast_rejoin", "interval", NULL },    /* PROP_MCASTREJOIN_INTERVAL */
+                                { "runner", "name", NULL },              /* PROP_RUNNER */
+                                { "runner", "hwaddr_policy", NULL },     /* PROP_RUNNER_HWPOLICY */
+                                { "runner", "tx_hash", NULL },           /* PROP_RUNNER_TXHASH */
+                                { "runner", "tx_balancer", "name" },     /* PROP_RUNNER_TXBALANCER */
+                                { "runner", "tx_balancer", "interval" }, /* PROP_RUNNER_TXBALANCER_INTERVAL */
+                                { "runner", "active", NULL },            /* PROP_RUNNER_ACTIVE */
+                                { "runner", "fastrate", NULL },          /* PROP_RUNNER_FASTRATE */
+                                { "runner", "sys_prio", NULL },          /* PROP_RUNNER_SYSPRIO */
+                                { "runner", "min_ports", NULL },         /* PROP_RUNNER_MINPORTS */
+                                { "runner", "agg_select_policy", NULL }, /* PROP_RUNNER_AGGSELECTPOLICY */
+                              };
 
 /**
  * nm_setting_team_new:
@@ -551,12 +575,18 @@ _align_team_properties (NMSettingTeam *setting)
 	                   nm_setting_team_add_runner_txhash);
 }
 
+#define VAL_TO_JSON(conf, keys, val) \
+	G_STMT_START { \
+		_nm_utils_team_config_set (&conf, keys.key, keys.key2, keys.key3, val); \
+	} G_STMT_END
 static void
 set_property (GObject *object, guint prop_id,
               const GValue *value, GParamSpec *pspec)
 {
 	NMSettingTeam *setting = NM_SETTING_TEAM (object);
 	NMSettingTeamPrivate *priv = NM_SETTING_TEAM_GET_PRIVATE (object);
+	const GValue *align_value = NULL;
+	gboolean align_config = FALSE;
 
 	switch (prop_id) {
 	case PROP_CONFIG:
@@ -565,39 +595,120 @@ set_property (GObject *object, guint prop_id,
 		_align_team_properties (setting);
 		break;
 	case PROP_NOTIFYPEERS_COUNT:
+		if (priv->notifypeers_count == g_value_get_int (value))
+			break;
+		priv->notifypeers_count = g_value_get_int (value);
+		if (priv->notifypeers_count)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_NOTIFYPEERS_INTERVAL:
+		if (priv->notifypeers_interval == g_value_get_int (value))
+			break;
+		priv->notifypeers_interval = g_value_get_int (value);
+		if (priv->notifypeers_interval)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_MCASTREJOIN_COUNT:
+		if (priv->mcastrejoin_count == g_value_get_int (value))
+			break;
+		priv->mcastrejoin_count = g_value_get_int (value);
+		if (priv->mcastrejoin_count)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_MCASTREJOIN_INTERVAL:
+		if (priv->mcastrejoin_interval == g_value_get_int (value))
+			break;
+		priv->mcastrejoin_interval = g_value_get_int (value);
+		if (priv->mcastrejoin_interval)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER:
 		g_free (priv->runner);
 		priv->runner = g_value_dup_string (value);
+		if (priv->runner && !nm_streq (priv->runner, "roundrobin"))
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_HWPOLICY:
+		g_free (priv->runner_hwpolicy);
+		priv->runner_hwpolicy = g_value_dup_string (value);
+		if (priv->runner_hwpolicy && !nm_streq (priv->runner_hwpolicy, "same_all"))
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_TXHASH:
+		if (priv->runner_txhash)
+			g_ptr_array_unref (priv->runner_txhash);
+		priv->runner_txhash = _nm_utils_strv_to_ptrarray (g_value_get_boxed (value));
+		if (priv->runner_txhash->len)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_TXBALANCER:
+		g_free (priv->runner_txbalancer);
+		priv->runner_txbalancer = g_value_dup_string (value);
+		if (priv->runner_txbalancer && !nm_streq (priv->runner_txbalancer, "None"))
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_TXBALANCER_INTERVAL:
+		if (priv->runner_txbalancer_interval == g_value_get_int (value))
+			break;
+		priv->runner_txbalancer_interval = g_value_get_int (value);
+		if (priv->runner_txbalancer_interval)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_ACTIVE:
+		if (priv->runner_active == g_value_get_boolean (value))
+			break;
+		priv->runner_active = g_value_get_boolean (value);
+		if (priv->runner_active)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_FASTRATE:
+		if (priv->runner_fastrate == g_value_get_boolean (value))
+			break;
+		priv->runner_fastrate = g_value_get_boolean (value);
+		if (priv->runner_fastrate)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_SYSPRIO:
+		if (priv->runner_sysprio == g_value_get_int (value))
+			break;
+		priv->runner_sysprio = g_value_get_int (value);
+		if (priv->runner_sysprio)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_MINPORTS:
+		if (priv->runner_minports == g_value_get_int (value))
+			break;
+		priv->runner_minports = g_value_get_int (value);
+		if (priv->runner_minports)
+			align_value = value;
+		align_config = TRUE;
 		break;
 	case PROP_RUNNER_AGGSELECTPOLICY:
+		g_free (priv->runner_aggselectpolicy);
+		priv->runner_aggselectpolicy = g_value_dup_string (value);
+		if (priv->runner_aggselectpolicy && !nm_streq (priv->runner_aggselectpolicy, "lacp_prio"))
+			align_value = value;
+		align_config = TRUE;
 		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
 		break;
 	}
+
+	if (align_config)
+		VAL_TO_JSON (priv->config, _prop_to_keys[prop_id], align_value);
 }
 
 static void
