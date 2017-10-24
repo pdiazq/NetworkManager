@@ -1519,6 +1519,8 @@ src_libNetworkManager_la_SOURCES = \
 	src/nm-manager.h \
 	src/nm-pacrunner-manager.c \
 	src/nm-pacrunner-manager.h \
+	src/nm-dev-idx.c \
+	src/nm-dev-idx.h \
 	src/nm-policy.c \
 	src/nm-policy.h \
 	src/nm-rfkill-manager.c \
