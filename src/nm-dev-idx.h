@@ -91,13 +91,15 @@ CList *nm_dev_idx_index_dev_get_all (NMDevIdxIndex *self);
 CList *nm_dev_idx_index_con_get_all (NMDevIdxIndex *self);
 
 NMDevIdxNodeDev *nm_dev_idx_index_dev_create (NMDevIdxIndex *self,
-                                              NMDevice *device);
+                                              NMDevice *device,
+                                              gboolean exclusive);
 
 NMDevIdxNodeDev *nm_dev_idx_index_dev_lookup (NMDevIdxIndex *self,
                                               NMDevice *device);
 
 NMDevIdxNodeCon *nm_dev_idx_index_con_create (NMDevIdxIndex *self,
-                                              NMSettingsConnection *connection);
+                                              NMSettingsConnection *connection,
+                                              gboolean exclusive);
 
 NMDevIdxNodeCon *nm_dev_idx_index_con_lookup (NMDevIdxIndex *self,
                                               NMSettingsConnection *connection);

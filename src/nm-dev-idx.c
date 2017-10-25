@@ -235,7 +235,8 @@ nm_dev_idx_node_con_unref (NMDevIdxNodeCon *node_con)
 static NMDevIdxNodeDev *
 _dev_create (NMDevIdxIndex *self,
              NMDevice *device,
-             gboolean allow_create)
+             gboolean allow_create,
+             gboolean exclusive)
 {
 	NMDevIdxNodeDev *node_dev;
 
@@ -256,6 +257,8 @@ _dev_create (NMDevIdxIndex *self,
 	} else {
 		if (!allow_create)
 			return node_dev;
+		if (exclusive)
+			return NULL;
 		nm_dev_idx_node_dev_ref (node_dev);
 	}
 
@@ -264,22 +267,24 @@ _dev_create (NMDevIdxIndex *self,
 
 NMDevIdxNodeDev *
 nm_dev_idx_index_dev_create (NMDevIdxIndex *self,
-                             NMDevice *device)
+                             NMDevice *device,
+                             gboolean exclusive)
 {
-	return _dev_create (self, device, TRUE);
+	return _dev_create (self, device, TRUE, exclusive);
 }
 
 NMDevIdxNodeDev *
 nm_dev_idx_index_dev_lookup (NMDevIdxIndex *self,
                              NMDevice *device)
 {
-	return _dev_create (self, device, FALSE);
+	return _dev_create (self, device, FALSE, FALSE);
 }
 
 static NMDevIdxNodeCon *
 _con_create (NMDevIdxIndex *self,
              NMSettingsConnection *connection,
-             gboolean allow_create)
+             gboolean allow_create,
+             gboolean exclusive)
 {
 	NMDevIdxNodeCon *node_con;
 
@@ -300,6 +305,8 @@ _con_create (NMDevIdxIndex *self,
 	} else {
 		if (!allow_create)
 			return node_con;
+		if (exclusive)
+			return NULL;
 		nm_dev_idx_node_con_ref (node_con);
 	}
 
@@ -308,16 +315,17 @@ _con_create (NMDevIdxIndex *self,
 
 NMDevIdxNodeCon *
 nm_dev_idx_index_con_create (NMDevIdxIndex *self,
-                             NMSettingsConnection *connection)
+                             NMSettingsConnection *connection,
+                             gboolean exclusive)
 {
-	return _con_create (self, connection, TRUE);
+	return _con_create (self, connection, TRUE, exclusive);
 }
 
 NMDevIdxNodeCon *
 nm_dev_idx_index_con_lookup (NMDevIdxIndex *self,
                              NMSettingsConnection *connection)
 {
-	return _con_create (self, connection, FALSE);
+	return _con_create (self, connection, FALSE, FALSE);
 }
 
 /*****************************************************************************/
@@ -355,8 +363,8 @@ nm_dev_idx_index_dc_access (NMDevIdxIndex *self,
 	if (remove || !allow_create)
 		return NULL;
 
-	node_dev = _dev_create (self, device, TRUE);
-	node_con = _con_create (self, connection, TRUE);
+	node_dev = _dev_create (self, device, TRUE, FALSE);
+	node_con = _con_create (self, connection, TRUE, FALSE);
 
 	node_dc = g_slice_new0 (NMDevIdxNodeDC);
 	node_dc->base.node_dev = node_dev;

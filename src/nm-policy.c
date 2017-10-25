@@ -49,6 +49,7 @@
 #include "nm-config.h"
 #include "nm-netns.h"
 #include "nm-hostname-manager.h"
+#include "nm-dev-idx.h"
 
 /*****************************************************************************/
 
@@ -100,6 +101,8 @@ typedef struct {
 	gboolean dhcp_hostname; /* current hostname was set from dhcp */
 
 	GArray *ip6_prefix_delegations; /* pool of ip6 prefixes delegated to all devices */
+
+	NMDevIdxIndex *dev_idx;
 } NMPolicyPrivate;
 
 struct _NMPolicy {
@@ -2004,12 +2007,14 @@ device_added (NMManager *manager, NMDevice *device, gpointer user_data)
 {
 	NMPolicyPrivate *priv = user_data;
 	NMPolicy *self = _PRIV_TO_SELF (priv);
+	NMDevIdxNodeDev *node_dev;
 
 	g_return_if_fail (NM_IS_POLICY (self));
 
 	priv = NM_POLICY_GET_PRIVATE (self);
 
-	if (!nm_g_hash_table_add (priv->devices, device))
+	node_dev = nm_dev_idx_index_dev_create (priv->dev_idx, device, TRUE);
+	if (!node_dev)
 		g_return_if_reached ();
 
 	devices_list_register (self, device);
@@ -2475,6 +2480,8 @@ nm_policy_init (NMPolicy *self)
 	NMPolicyPrivate *priv = NM_POLICY_GET_PRIVATE (self);
 	const char *hostname_mode;
 
+	priv->dev_idx = nm_dev_idx_index_new ();
+
 	priv->netns = g_object_ref (nm_netns_get ());
 
 	priv->hostname_manager = g_object_ref (nm_hostname_manager_get ());
@@ -2647,6 +2654,8 @@ finalize (GObject *object)
 	NMPolicyPrivate *priv = NM_POLICY_GET_PRIVATE (self);
 
 	g_hash_table_unref (priv->devices);
+
+	nm_dev_idx_index_unref (priv->dev_idx);
 
 	G_OBJECT_CLASS (nm_policy_parent_class)->finalize (object);
 
