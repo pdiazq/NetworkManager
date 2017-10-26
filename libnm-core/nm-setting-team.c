@@ -289,6 +289,108 @@ nm_setting_team_get_runner_aggselectpolicy (NMSettingTeam *setting)
 	return NM_SETTING_TEAM_GET_PRIVATE (setting)->runner_aggselectpolicy;
 }
 
+/**
+ * nm_setting_team_remove_runner_txhash_by_value:
+ * @setting: the #NMSetetingTeam
+ * @txhash: the txhash element to remove
+ *
+ * Removes the txhash element #txhash
+ *
+ * Returns: %TRUE if the txhash element was found and removed; %FALSE if it was not.
+ *
+ * Since 1.10
+ **/
+gboolean
+nm_setting_team_remove_runner_txhash_by_value (NMSettingTeam *setting,
+                                               const char *txhash)
+{
+	NMSettingTeamPrivate *priv = NM_SETTING_TEAM_GET_PRIVATE (setting);
+	guint i;
+
+	g_return_val_if_fail (NM_IS_SETTING_TEAM (setting), FALSE);
+	g_return_val_if_fail (txhash != NULL, FALSE);
+	g_return_val_if_fail (txhash[0] != '\0', FALSE);
+
+	for (i = 0; i < priv->runner_txhash->len; i++) {
+		if (!strcmp (txhash, priv->runner_txhash->pdata[i])) {
+			g_ptr_array_remove_index (priv->runner_txhash, i);
+			g_object_notify (G_OBJECT (setting), NM_SETTING_TEAM_RUNNER_TXHASH);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+/**
+ * nm_setting_team_get_num_runner_txhash:
+ * @setting: the #NMSettingTeam
+ *
+ * Returns: the number of elements in txhash
+ *
+ * Since: 1.10
+ **/
+guint
+nm_setting_team_get_num_runner_txhash (NMSettingTeam *setting)
+{
+	NMSettingTeamPrivate *priv = NM_SETTING_TEAM_GET_PRIVATE (setting);
+
+	g_return_val_if_fail (NM_IS_SETTING_TEAM (setting), 0);
+
+	return priv->runner_txhash ? priv->runner_txhash->len : 0;
+}
+
+/**
+ * nm_setting_team_remove_runner_txhash:
+ * @setting: the #NMSettingTeam
+ * @idx: index number of the element to remove from txhash
+ *
+ * Removes the txhash element at index @idx.
+ *
+ **/
+void
+nm_setting_team_remove_runner_txhash (NMSettingTeam *setting, int idx)
+{
+	NMSettingTeamPrivate *priv = NM_SETTING_TEAM_GET_PRIVATE (setting);
+
+	g_return_if_fail (NM_IS_SETTING_TEAM (setting));
+	g_return_if_fail (idx >= 0 && idx < priv->runner_txhash->len);
+
+	g_ptr_array_remove_index (priv->runner_txhash, idx);
+	g_object_notify (G_OBJECT (setting), NM_SETTING_TEAM_RUNNER_TXHASH);
+}
+
+/**
+ * nm_setting_team_add_runner_txhash:
+ * @setting: the #NMSettingTeam
+ * @txhash: the element to add to txhash
+ *
+ * Adds a new txhash element to the setting.
+ *
+ * Returns: %TRUE if the txhash element was added; %FALSE if the element
+ * was already knnown.
+ **/
+gboolean
+nm_setting_team_add_runner_txhash (NMSettingTeam *setting, const char *txhash)
+{
+	NMSettingTeamPrivate *priv = NM_SETTING_TEAM_GET_PRIVATE (setting);
+	guint i;
+
+	g_return_val_if_fail (NM_IS_SETTING_TEAM (setting), FALSE);
+	g_return_val_if_fail (txhash != NULL, FALSE);
+	g_return_val_if_fail (txhash[0] != '\0', FALSE);
+
+	if (!priv->runner_txhash)
+		priv->runner_txhash = g_ptr_array_new_with_free_func (g_free);
+	for (i = 0; i < priv->runner_txhash->len; i++) {
+		if (nm_streq (txhash, priv->runner_txhash->pdata[i]))
+			return FALSE;
+	}
+
+	g_ptr_array_add (priv->runner_txhash, g_strdup (txhash));
+	g_object_notify (G_OBJECT (setting), NM_SETTING_TEAM_RUNNER_TXHASH);
+	return TRUE;
+}
+
 static gboolean
 verify (NMSetting *setting, NMConnection *connection, GError **error)
 {

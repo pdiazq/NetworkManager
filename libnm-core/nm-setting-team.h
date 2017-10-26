@@ -107,7 +107,14 @@ NM_AVAILABLE_IN_1_10
 gint nm_setting_team_get_runner_minports (NMSettingTeam *setting);
 NM_AVAILABLE_IN_1_10
 const char * nm_setting_team_get_runner_aggselectpolicy (NMSettingTeam *setting);
-
+NM_AVAILABLE_IN_1_10
+gboolean nm_setting_team_remove_runner_txhash_by_value (NMSettingTeam *setting, const char *txhash);
+NM_AVAILABLE_IN_1_10
+guint nm_setting_team_get_num_runner_txhash (NMSettingTeam *setting);
+NM_AVAILABLE_IN_1_10
+void nm_setting_team_remove_runner_txhash (NMSettingTeam *setting, int idx);
+NM_AVAILABLE_IN_1_10
+gboolean nm_setting_team_add_runner_txhash (NMSettingTeam *setting, const char *txhash);
 G_END_DECLS
 
 #endif /* __NM_SETTING_TEAM_H__ */
