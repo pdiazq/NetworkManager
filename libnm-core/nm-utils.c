@@ -4568,17 +4568,28 @@ _nm_utils_team_config_set (char **conf,
 	if (!value) {
 		const char *remove_key = key2;
 
+		json_link = json;
 		json_element = json_object_get (json, key);
 		if (!json_element)
 			goto done;
 		if (key3) {
+			json_link = json_element;
 			json_element = json_object_get (json_element, key2);
 			if (!json_element)
 				goto done;
 			remove_key = key3;
 		}
-		if (json_object_del (json_element, remove_key) == 0)
-			updated = TRUE;
+		if (!json_object_del (json_element, remove_key) == 0)
+			goto done;
+
+		updated = TRUE;
+
+		if (json_object_size (json_element) == 0)
+			json_object_del (json_link, (key3 ? key2 : key));
+
+		if (key3 && json_object_size (json_link) == 0)
+			json_object_del (json, key);
+
 		goto done;
 	}
 
@@ -4623,18 +4634,21 @@ _nm_utils_team_config_set (char **conf,
 			json_link = json_object ();
 			json_object_set_new (json_element, key2, json_link);
 		}
-		json_element = json_link;
-
-		json_link = json_object ();
 		json_object_set_new (json_link, key3, json_value);
-	} else
-		json_link = json_value;
-	json_object_set_new (json_element, key2, json_link);
+		goto done;
+	}
+
+	json_object_set_new (json_element, key2, json_value);
 
 done:
 	if (updated) {
 		g_free (*conf);
 		*conf = json_dumps (json, 0);
+		/* Don't save an empty config */
+		if (nm_streq0 (*conf, "{}")) {
+			g_free (*conf);
+			*conf = NULL;
+		}
 	}
 	json_decref (json);
 	return updated;
